@@ -1,37 +1,43 @@
 services:
   # Env 1: Default / Critical (Non-sécurisé)
   tomcat-critical:
-    image: tomcat:10.1-jdk17
+    container_name: "tomcat-critical"
+    build: ./environments/env1_critical
     ports:
       - "8081:8080"
     # Runs out-of-the-box, default apps intact, default 8005 shutdown port active
 
   # Env 2: Partially Improved (Faible)
   tomcat-faible:
-    image: tomcat:10.1-jdk17
+    container_name: "tomcat-faible"
+    build: ./environments/env2_faible
     ports:
       - "8082:8080"
     volumes:
-      # Script to delete docs/examples on startup, but leaves HTTP unencrypted
-      - ./configs/env2/server.xml:/usr/local/tomcat/conf/server.xml
+      # some default folders but leaves HTTP unencrypted
+      - ./environments/env2_faible/context.xml:/usr/local/tomcat/conf/context.xml
+      - ./environments/env2_faible/server.xml:/usr/local/tomcat/conf/server.xml
 
   # Env 3: Moderate (Modéré)
   tomcat-modere:
-    image: tomcat:10.1-jdk17
+    container_name: "tomcat-modere"
+    build: ./environments/env3_modere
     ports:
       - "8083:8080"
-      - "8443:8443"
+      - "8483:8443"
     volumes:
-      - ./configs/env3/server.xml:/usr/local/tomcat/conf/server.xml
-      - ./configs/env3/keystore.jks:/usr/local/tomcat/conf/keystore.jks
+      - ./environments/env3_modere/server.xml:/usr/local/tomcat/conf/server.xml
+      - ./environments/env3_modere/keystore.jks:/usr/local/tomcat/conf/keystore.jks
 
   # Env 4: Hardened (Durcie)
   tomcat-durcie:
-    image: tomcat:10.1-jdk17
+    container_name: "tomcat-durcie"
+    build: ./environments/env4_durcie
     ports:
+      - "8084:8080"
       - "8444:8443"
     user: "1001:1001" # Simulates running as a non-root service user
     volumes:
-      - ./configs/env4/server.xml:/usr/local/tomcat/conf/server.xml
-      - ./configs/env4/web.xml:/usr/local/tomcat/conf/web.xml
-      - ./configs/env4/keystore.jks:/usr/local/tomcat/conf/keystore.jks
+      - ./environments/env4_durcie/server.xml:/usr/local/tomcat/conf/server.xml
+      - ./environments/env4_durcie/web.xml:/usr/local/tomcat/conf/web.xml
+      - ./environments/env4_durcie/keystore.jks:/usr/local/tomcat/conf/keystore.jks
