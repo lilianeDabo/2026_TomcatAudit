@@ -1,0 +1,37 @@
+services:
+  # Env 1: Default / Critical (Non-sécurisé)
+  tomcat-critical:
+    image: tomcat:10.1-jdk17
+    ports:
+      - "8081:8080"
+    # Runs out-of-the-box, default apps intact, default 8005 shutdown port active
+
+  # Env 2: Partially Improved (Faible)
+  tomcat-faible:
+    image: tomcat:10.1-jdk17
+    ports:
+      - "8082:8080"
+    volumes:
+      # Script to delete docs/examples on startup, but leaves HTTP unencrypted
+      - ./configs/env2/server.xml:/usr/local/tomcat/conf/server.xml
+
+  # Env 3: Moderate (Modéré)
+  tomcat-modere:
+    image: tomcat:10.1-jdk17
+    ports:
+      - "8083:8080"
+      - "8443:8443"
+    volumes:
+      - ./configs/env3/server.xml:/usr/local/tomcat/conf/server.xml
+      - ./configs/env3/keystore.jks:/usr/local/tomcat/conf/keystore.jks
+
+  # Env 4: Hardened (Durcie)
+  tomcat-durcie:
+    image: tomcat:10.1-jdk17
+    ports:
+      - "8444:8443"
+    user: "1001:1001" # Simulates running as a non-root service user
+    volumes:
+      - ./configs/env4/server.xml:/usr/local/tomcat/conf/server.xml
+      - ./configs/env4/web.xml:/usr/local/tomcat/conf/web.xml
+      - ./configs/env4/keystore.jks:/usr/local/tomcat/conf/keystore.jks
