@@ -1,7 +1,16 @@
 #!/bin/bash
 
-# Ensure a path to TOMCAT_HOME is provided
-TOMCAT_HOME=${1:-"/opt/tomcat"}
+# If $1 is empty, check common paths natively
+if [ -z "$1" ]; then
+    if [ -d "/usr/local/tomcat" ]; then
+        TOMCAT_HOME="/usr/local/tomcat"
+    else
+        TOMCAT_HOME="/opt/tomcat"
+    fi
+else
+    TOMCAT_HOME="$1"
+fi
+
 SERVER_XML="$TOMCAT_HOME/conf/server.xml"
 WEB_XML="$TOMCAT_HOME/conf/web.xml"
 
@@ -36,9 +45,12 @@ else
 fi
 
 # 3. CHECK: TLS/HTTPS enabled
-# Target: SSLEnabled="true"
+# Target: SSLEnabled="true" [Source: Course Material]
 if [ -f "$SERVER_XML" ]; then
-    if grep -q 'SSLEnabled="true"' "$SERVER_XML"; then
+    # Completely strip multi-line XML comments using awk
+    CLEAN_SERVER=$(awk 'BEGIN{RS=""} NR==1{print $0;next} {print $2}' "$SERVER_XML")
+    
+    if echo "$CLEAN_SERVER" | grep -q 'SSLEnabled="true"'; then
         echo "[CHECK] TLS/HTTPS enabled -> COMPLIANT"
     else
         echo "[CHECK] TLS/HTTPS enabled -> NON-COMPLIANT"
@@ -84,6 +96,27 @@ elif [ ! -d "$TOMCAT_HOME/webapps/manager" ]; then
     echo "[CHECK] Manager network restriction -> COMPLIANT (Manager app deleted entirely)"
 else
     echo "[CHECK] Manager network restriction -> ERROR (context.xml not found)"
+fi
+
+### EXTRA
+
+# 6. CHECK: Version Banner Disclosed (CIS Benchmark 4.1.1 Add-on)
+# Target: ErrorReportValve must have showServerInfo="false" and showReport="false"
+if [ -f "$SERVER_XML" ]; then
+    # Check if ErrorReportValve is defined
+    if grep -q "org.apache.catalina.valves.ErrorReportValve" "$SERVER_XML"; then
+        # Check if server info and reports are explicitly hidden
+        if grep -q 'showServerInfo="false"' "$SERVER_XML" && grep -q 'showReport="false"' "$SERVER_XML"; then
+            echo "[CHECK] Version banner hidden -> COMPLIANT (Metadata leakage disabled)"
+        else
+            echo "[CHECK] Version banner hidden -> PARTIAL (Valve exists but improperly configured)"
+        fi
+    else
+        # Default behavior leaks full version details on error pages
+        echo "[CHECK] Version banner hidden -> NON-COMPLIANT (Default error reports leak version info)"
+    fi
+else
+    echo "[CHECK] Version banner hidden -> ERROR (server.xml not found)"
 fi
 
 echo "=================================================="
